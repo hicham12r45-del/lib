@@ -1,0 +1,64 @@
+name: Render Remotion Video
+
+on:
+  workflow_dispatch:
+    inputs:
+      composition:
+        description: 'Composition ID to render'
+        required: false
+        default: 'HabashaJourney'
+      quality:
+        description: 'Render quality (draft or final)'
+        required: false
+        default: 'draft'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Chrome dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libnss3 libdbus-1-3 libatk1.0-0 \
+            libasound2t64 libxrandr2 libxkbcommon-dev libxfixes3 \
+            libxcomposite1 libxdamage1 libgbm-dev libatk-bridge2.0-0 libcups2
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Ensure voiceover exists
+        run: |
+          mkdir -p public/assets/audio
+          if [ ! -f public/assets/audio/voiceover.mp3 ]; then
+            echo "::warning::voiceover.mp3 not found, generating 85s silent placeholder"
+            ffmpeg -f lavfi -i anullsrc=r=44100:cl=stereo -t 85 -q:a 9 public/assets/audio/voiceover.mp3
+          fi
+
+      - name: Render video
+        env:
+          COMPOSITION: ${{ github.event.inputs.composition }}
+          QUALITY: ${{ github.event.inputs.quality }}
+        run: |
+          mkdir -p out
+          if [ "$QUALITY" = "final" ]; then
+            npx remotion render src/index.ts "$COMPOSITION" out/video.mp4 --crf=18
+          else
+            npx remotion render src/index.ts "$COMPOSITION" out/video.mp4 --scale=0.5 --crf=28
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video
+          path: out/video.mp4
+          if-no-files-found: error
+          retention-days: 7
