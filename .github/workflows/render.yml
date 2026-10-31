@@ -49,14 +49,13 @@ jobs:
           QUALITY: ${{ github.event.inputs.quality }}
         run: |
           mkdir -p out
-          IDS=$(npx remotion compositions src/index.ts --quiet 2>/dev/null | awk '{print $1}' | grep -v '^$' || true)
-          echo "Available compositions: $IDS"
-          if ! echo "$IDS" | grep -qx "$COMPOSITION"; then
-            FALLBACK=$(echo "$IDS" | head -n 1)
+          if ! grep -q "id=\"$COMPOSITION\"" src/Root.tsx; then
+            FALLBACK=$(grep -oE 'id="[^"]+"' src/Root.tsx | head -n 1 | cut -d'"' -f2)
             FALLBACK=${FALLBACK:-HabashaJourney}
             echo "::warning::Composition '$COMPOSITION' not found, using '$FALLBACK'"
             COMPOSITION="$FALLBACK"
           fi
+          echo "Rendering: $COMPOSITION ($QUALITY)"
           if [ "$QUALITY" = "final" ]; then
             npx remotion render src/index.ts "$COMPOSITION" out/video.mp4 --crf=18
           else
