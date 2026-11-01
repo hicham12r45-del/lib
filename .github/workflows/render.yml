@@ -15,9 +15,7 @@ on:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      NODE_OPTIONS: --dns-result-order=ipv4first
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '18'
 
       - name: Install Chrome dependencies
         run: |
@@ -51,13 +49,14 @@ jobs:
           QUALITY: ${{ github.event.inputs.quality }}
         run: |
           mkdir -p out
-          if ! grep -q "id=\"$COMPOSITION\"" src/Root.tsx; then
-            FALLBACK=$(grep -oE 'id="[^"]+"' src/Root.tsx | head -n 1 | cut -d'"' -f2)
+          IDS=$(npx remotion compositions src/index.ts --quiet 2>/dev/null | awk '{print $1}' | grep -v '^$' || true)
+          echo "Available compositions: $IDS"
+          if ! echo "$IDS" | grep -qx "$COMPOSITION"; then
+            FALLBACK=$(echo "$IDS" | head -n 1)
             FALLBACK=${FALLBACK:-HabashaJourney}
             echo "::warning::Composition '$COMPOSITION' not found, using '$FALLBACK'"
             COMPOSITION="$FALLBACK"
           fi
-          echo "Rendering: $COMPOSITION ($QUALITY)"
           if [ "$QUALITY" = "final" ]; then
             npx remotion render src/index.ts "$COMPOSITION" out/video.mp4 --crf=18
           else

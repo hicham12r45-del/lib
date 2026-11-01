@@ -6,30 +6,44 @@ import { DayCounter } from "./DayCounter";
 import { Figure } from "./Figure";
 import { ChapterTitle } from "./ChapterTitle";
 import { Caption } from "./Caption";
+import { Camera } from "./Camera";
+import { RedSeaMap } from "./RedSeaMap";
+import { CaravanCloseUp } from "./CaravanCloseUp";
+import { JEDDAH, MECCA, ROUTE_LAND, SHUAIBA, View, makeProject, smoothPath } from "../geo";
 
-// مسار مبسّط من مكة إلى ميناء الشعيبة (مخطط تقريبي وليس دقيقاً جغرافياً)
-const ROUTE = "M340 530 C 330 560, 290 540, 280 510 S 260 495, 245 490";
-const MECCA = { x: 340, y: 530 };
-const SHUAIBA = { x: 245, y: 490 };
+// ===== الخريطة: منطقة مكة ← الشعيبة (إحداثيات تقريبية) =====
+const MAP_W = 1100;
+const MAP_H = 800;
+const VIEW: View = { lon0: 38.5, lon1: 41.1, lat0: 20.15, lat1: 21.92 };
+const { project } = makeProject(VIEW, MAP_W, MAP_H);
+const ROUTE = smoothPath(ROUTE_LAND.map(project));
+const ROUTE_LEN = getLength(ROUTE);
 
-// إطارات محلية: المشهد كله 660 إطاراً (0:22 – 0:44)
+// ===== التوقيت (إطارات محلية: المشهد 660 إطاراً = 0:22 – 0:44) =====
 const T = TITLES.land; // 0:22 – 0:26 عنوان الفصل
 const PHASE2 = 510; // 0:39 "مسافة قطعتها القافلة..."
 const WALK_START = 130;
 const WALK_END = 630;
+const CLOSE_START = 200; // لقطة القافلة القريبة "ليلاً وبسرية تامة"
+const CLOSE_END = 460;
+
+const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
 export const Scene2LandJourney: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
   const walk = interpolate(frame, [WALK_START, WALK_END], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
+    ...clamp,
     easing: Easing.inOut(Easing.cubic),
   });
   const { strokeDasharray, strokeDashoffset } = evolvePath(walk, ROUTE);
-  const length = getLength(ROUTE);
   const mapIn = spring({ frame: frame - (T - 20), fps, config: { damping: 18 } });
+  const closeOp = interpolate(frame, [CLOSE_START, CLOSE_START + 25, CLOSE_END - 25, CLOSE_END], [0, 1, 1, 0], clamp);
+
+  const mecca = project(MECCA);
+  const shuaiba = project(SHUAIBA);
+  const jeddah = project(JEDDAH);
 
   return (
     <AbsoluteFill style={{ background: `linear-gradient(180deg, #050b1f, ${COLORS.deepBlue})` }}>
@@ -49,62 +63,94 @@ export const Scene2LandJourney: React.FC = () => {
         <circle cx={1675} cy={125} r={55} fill="#050b1f" />
       </svg>
 
-      {/* الخريطة */}
-      <div style={{ position: "absolute", left: 60, top: 140, opacity: mapIn, transform: `scale(${0.9 + 0.1 * mapIn})` }}>
-        <svg width={1100} height={800} viewBox="120 380 300 220">
-          <path
-            d="M300 40 L420 60 L520 140 L600 260 L720 340 L780 440 L700 520 L560 580 L440 700 L360 760 L300 640 L260 520 L200 400 L140 300 L200 200 Z"
-            fill="#1e2a44"
-            stroke="#3a4b73"
-            strokeWidth={1.5}
-          />
-          <path d="M0 0 L128 0 L118 200 L150 330 L128 480 L170 620 L100 800 L0 800 Z" fill="#17203a" />
-          <text x={175} y={430} fontSize={9} fill={COLORS.muted} textAnchor="middle">
-            البحر الأحمر
-          </text>
+      {/* الخريطة مع حركة كاميرا بطيئة */}
+      <Camera dur={SCENES_LAND_DUR} zoom={[1, 1.1]} pan={[-20, -10]} origin="32% 50%">
+        <div
+          style={{
+            position: "absolute",
+            left: 60,
+            top: 140,
+            width: MAP_W,
+            height: MAP_H,
+            opacity: mapIn,
+            transform: `scale(${0.92 + 0.08 * mapIn})`,
+            borderRadius: 28,
+            overflow: "hidden",
+            border: `2px solid ${COLORS.gold}33`,
+            boxShadow: "0 20px 80px #00000066",
+          }}
+        >
+          <RedSeaMap w={MAP_W} h={MAP_H} view={VIEW} seaLabel={[38.88, 21.1]} labelSize={30}>
+            {() => (
+              <g>
+                {/* المسار */}
+                <path d={ROUTE} fill="none" stroke="#ffffff30" strokeWidth={3} strokeDasharray="6 8" />
+                <path
+                  d={ROUTE}
+                  fill="none"
+                  stroke={COLORS.gold}
+                  strokeWidth={5}
+                  strokeDasharray={strokeDasharray}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                />
 
-          <path d={ROUTE} fill="none" stroke="#ffffff22" strokeWidth={2} strokeDasharray="4 4" />
-          <path
-            d={ROUTE}
-            fill="none"
-            stroke={COLORS.gold}
-            strokeWidth={2.5}
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-          />
+                {/* جدة (مرجع) */}
+                <circle cx={jeddah[0]} cy={jeddah[1]} r={5} fill="#9aa6c0" />
+                <text x={jeddah[0] - 8} y={jeddah[1] - 14} fontSize={22} fill="#9aa6c0" textAnchor="middle">
+                  جدة
+                </text>
 
-          {[
-            { p: MECCA, name: "مكة المكرمة" },
-            { p: SHUAIBA, name: "ميناء الشعيبة" },
-          ].map(({ p, name }) => (
-            <g key={name}>
-              <circle cx={p.x} cy={p.y} r={5} fill={COLORS.gold} />
-              <circle cx={p.x} cy={p.y} r={5 + (frame % 60) / 6} fill="none" stroke={COLORS.gold} opacity={1 - (frame % 60) / 60} />
-              <text x={p.x} y={p.y + 17} fontSize={9} fill={COLORS.text} textAnchor="middle" fontWeight={700}>
-                {name}
-              </text>
-            </g>
-          ))}
+                {/* المدن */}
+                {[
+                  { p: mecca, name: "مكة المكرمة" },
+                  { p: shuaiba, name: "ميناء الشعيبة" },
+                ].map(({ p, name }) => (
+                  <g key={name}>
+                    <circle cx={p[0]} cy={p[1]} r={9} fill={COLORS.gold} />
+                    <circle
+                      cx={p[0]}
+                      cy={p[1]}
+                      r={9 + (frame % 60) / 2.5}
+                      fill="none"
+                      stroke={COLORS.gold}
+                      opacity={1 - (frame % 60) / 60}
+                      strokeWidth={2}
+                    />
+                    <text x={p[0]} y={p[1] + 38} fontSize={30} fill={COLORS.text} textAnchor="middle" fontWeight={700}>
+                      {name}
+                    </text>
+                  </g>
+                ))}
 
-          {/* القافلة: 5 شخصيات بلا ملامح */}
-          {[0, 1, 2, 3, 4].map((i) => {
-            const progress = Math.max(0, Math.min(1, walk - i * 0.035));
-            const pt = getPointAtLength(ROUTE, progress * length) ?? MECCA;
-            return (
-              <Figure
-                key={i}
-                x={pt.x - 4}
-                y={pt.y - 9}
-                frame={frame}
-                scale={0.1}
-                phase={i * 1.3}
-                color={i % 2 ? "#cfc7b0" : "#e3dcc8"}
-              />
-            );
-          })}
-        </svg>
-      </div>
+                {/* القافلة: 5 شخصيات بلا ملامح */}
+                {[0, 1, 2, 3, 4].map((i) => {
+                  const progress = Math.max(0, Math.min(1, walk - i * 0.03));
+                  const pt = getPointAtLength(ROUTE, progress * ROUTE_LEN) ?? { x: mecca[0], y: mecca[1] };
+                  return (
+                    <Figure
+                      key={i}
+                      x={pt.x}
+                      y={pt.y - 38}
+                      frame={frame}
+                      scale={0.38}
+                      phase={i * 1.3}
+                      color={i % 2 ? "#cfc7b0" : "#e3dcc8"}
+                    />
+                  );
+                })}
+              </g>
+            )}
+          </RedSeaMap>
+        </div>
+      </Camera>
+
+      {/* لقطة القافلة القريبة (تتداخل فوق الخريطة) */}
+      {closeOp > 0 && (
+        <AbsoluteFill style={{ opacity: closeOp }}>
+          <CaravanCloseUp start={CLOSE_START} dur={CLOSE_END - CLOSE_START} />
+        </AbsoluteFill>
+      )}
 
       {/* العنوان + الشرح + العداد */}
       <div style={{ position: "absolute", right: 110, top: 150, width: 600 }}>
@@ -124,3 +170,6 @@ export const Scene2LandJourney: React.FC = () => {
     </AbsoluteFill>
   );
 };
+
+// مدة المشهد الكلية (لحركة الكاميرا)
+const SCENES_LAND_DUR = 660;

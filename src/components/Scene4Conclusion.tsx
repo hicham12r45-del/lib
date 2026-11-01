@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { COLORS, TITLES } from "../constants";
 import { ChapterTitle } from "./ChapterTitle";
+import { Camera } from "./Camera";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
@@ -22,6 +23,8 @@ export const Scene4Conclusion: React.FC = () => {
   const refs = interpolate(frame, [REFS, REFS + 30], [0, 1], clamp);
 
   return (
+    <AbsoluteFill>
+    <Camera dur={540} zoom={[1, 1.04]}>
     <AbsoluteFill
       style={{
         background: `radial-gradient(circle at 50% 45%, ${COLORS.deepBlue}, ${COLORS.midnight} 75%)`,
@@ -88,6 +91,9 @@ export const Scene4Conclusion: React.FC = () => {
           المصادر: سيرة ابن هشام &nbsp;•&nbsp; الطبقات الكبرى لابن سعد
         </div>
       </div>
+
+    </AbsoluteFill>
+    </Camera>
 
       <ChapterTitle number="الفصل الرابع" title="الخلاصة والمصادر" dur={T} />
     </AbsoluteFill>

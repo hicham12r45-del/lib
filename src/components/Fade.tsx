@@ -8,19 +8,15 @@ type Props = {
   children: React.ReactNode;
 };
 
-/** يضيف ظهوراً واختفاءً ناعمين للمشهد (الإطار هنا محلي داخل Sequence) */
-export const Fade: React.FC<Props> = ({
-  duration,
-  fadeIn = 20,
-  fadeOut = 20,
-  children,
-}) => {
+const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
+
+/**
+ * ظهور واختفاء ناعمان للمشهد. القيمة 0 تعني بلا تدرّج.
+ * المشهد الداخل يظهر فوق الخارج (Cross-dissolve) لأن Sequence التالي يُرسم أعلى.
+ */
+export const Fade: React.FC<Props> = ({ duration, fadeIn = 20, fadeOut = 0, children }) => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(
-    frame,
-    [0, fadeIn, duration - fadeOut, duration],
-    [0, 1, 1, 0],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" }
-  );
-  return <AbsoluteFill style={{ opacity }}>{children}</AbsoluteFill>;
+  const a = fadeIn > 0 ? interpolate(frame, [0, fadeIn], [0, 1], clamp) : 1;
+  const b = fadeOut > 0 ? interpolate(frame, [duration - fadeOut, duration], [1, 0], clamp) : 1;
+  return <AbsoluteFill style={{ opacity: a * b }}>{children}</AbsoluteFill>;
 };

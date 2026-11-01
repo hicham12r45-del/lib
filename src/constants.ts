@@ -18,6 +18,12 @@ export const TITLES = {
   end: 120, // 1:07 – 1:11
 } as const;
 
+// مدة التداخل بين المشاهد (Cross-dissolve) بالإطارات
+export const TRANSITION = 20;
+
+// مستوى كل المؤثرات الصوتية (1 = عادي، 0 = كتم المؤثرات كلها)
+export const SFX_GAIN = 1;
+
 export const COLORS = {
   midnight: "#0a1230",
   charcoal: "#141821",

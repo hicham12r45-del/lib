@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, interpolate, random, useCurrentFrame } from "remotion";
 import { COLORS, TITLES } from "../constants";
 import { ChapterTitle } from "./ChapterTitle";
+import { Camera } from "./Camera";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
@@ -60,9 +61,11 @@ export const Scene1Intro: React.FC = () => {
   const frame = useCurrentFrame();
 
   return (
-    <AbsoluteFill
-      style={{ background: `radial-gradient(circle at 50% 40%, ${COLORS.deepBlue}, ${COLORS.midnight} 70%)` }}
-    >
+    <AbsoluteFill>
+      <Camera dur={660} zoom={[1, 1.05]} origin="50% 55%">
+      <AbsoluteFill
+        style={{ background: `radial-gradient(circle at 50% 40%, ${COLORS.deepBlue}, ${COLORS.midnight} 70%)` }}
+      />
       {/* جزيئات عائمة خفيفة في الخلفية */}
       <svg width={1920} height={1080} style={{ position: "absolute" }}>
         {Array.from({ length: 40 }).map((_, i) => {
@@ -96,6 +99,7 @@ export const Scene1Intro: React.FC = () => {
           size={54}
         />
       </AbsoluteFill>
+      </Camera>
 
       <ChapterTitle number="الفصل الأول" title="المقدمة والسؤال" dur={TITLES.intro} />
     </AbsoluteFill>
