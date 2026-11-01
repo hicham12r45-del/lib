@@ -33,8 +33,7 @@ export const MainVideo: React.FC = () => (
     </Sequence>
 
     <Sequence from={SCENES.sea.from} durationInFrames={SCENES.sea.dur}>
-      {/* دخول سريع لأن المشهد له انتقال خاص (كشف دائري) */}
-      <Fade duration={SCENES.sea.dur} fadeIn={1}>
+      <Fade duration={SCENES.sea.dur}>
         <Scene3SeaCrossing />
       </Fade>
     </Sequence>

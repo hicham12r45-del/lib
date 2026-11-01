@@ -1,16 +1,22 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, random, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { evolvePath, getLength, getPointAtLength } from "@remotion/paths";
-import { COLORS } from "../constants";
+import { COLORS, TITLES } from "../constants";
 import { DayCounter } from "./DayCounter";
 import { Figure } from "./Figure";
+import { ChapterTitle } from "./ChapterTitle";
+import { Caption } from "./Caption";
 
 // مسار مبسّط من مكة إلى ميناء الشعيبة (مخطط تقريبي وليس دقيقاً جغرافياً)
 const ROUTE = "M340 530 C 330 560, 290 540, 280 510 S 260 495, 245 490";
 const MECCA = { x: 340, y: 530 };
 const SHUAIBA = { x: 245, y: 490 };
-const WALK_START = 120;
-const WALK_END = 900;
+
+// إطارات محلية: المشهد كله 660 إطاراً (0:22 – 0:44)
+const T = TITLES.land; // 0:22 – 0:26 عنوان الفصل
+const PHASE2 = 510; // 0:39 "مسافة قطعتها القافلة..."
+const WALK_START = 130;
+const WALK_END = 630;
 
 export const Scene2LandJourney: React.FC = () => {
   const frame = useCurrentFrame();
@@ -23,7 +29,7 @@ export const Scene2LandJourney: React.FC = () => {
   });
   const { strokeDasharray, strokeDashoffset } = evolvePath(walk, ROUTE);
   const length = getLength(ROUTE);
-  const mapIn = spring({ frame, fps, config: { damping: 18 } });
+  const mapIn = spring({ frame: frame - (T - 20), fps, config: { damping: 18 } });
 
   return (
     <AbsoluteFill style={{ background: `linear-gradient(180deg, #050b1f, ${COLORS.deepBlue})` }}>
@@ -46,20 +52,17 @@ export const Scene2LandJourney: React.FC = () => {
       {/* الخريطة */}
       <div style={{ position: "absolute", left: 60, top: 140, opacity: mapIn, transform: `scale(${0.9 + 0.1 * mapIn})` }}>
         <svg width={1100} height={800} viewBox="120 380 300 220">
-          {/* شبه الجزيرة العربية (مبسّطة) */}
           <path
             d="M300 40 L420 60 L520 140 L600 260 L720 340 L780 440 L700 520 L560 580 L440 700 L360 760 L300 640 L260 520 L200 400 L140 300 L200 200 Z"
             fill="#1e2a44"
             stroke="#3a4b73"
             strokeWidth={1.5}
           />
-          {/* ساحل أفريقيا */}
           <path d="M0 0 L128 0 L118 200 L150 330 L128 480 L170 620 L100 800 L0 800 Z" fill="#17203a" />
           <text x={175} y={430} fontSize={9} fill={COLORS.muted} textAnchor="middle">
             البحر الأحمر
           </text>
 
-          {/* المسار */}
           <path d={ROUTE} fill="none" stroke="#ffffff22" strokeWidth={2} strokeDasharray="4 4" />
           <path
             d={ROUTE}
@@ -71,7 +74,6 @@ export const Scene2LandJourney: React.FC = () => {
             strokeLinecap="round"
           />
 
-          {/* المدن */}
           {[
             { p: MECCA, name: "مكة المكرمة" },
             { p: SHUAIBA, name: "ميناء الشعيبة" },
@@ -88,7 +90,7 @@ export const Scene2LandJourney: React.FC = () => {
           {/* القافلة: 5 شخصيات بلا ملامح */}
           {[0, 1, 2, 3, 4].map((i) => {
             const progress = Math.max(0, Math.min(1, walk - i * 0.035));
-            const pt = getPointAtLength(ROUTE, progress * length);
+            const pt = getPointAtLength(ROUTE, progress * length) ?? MECCA;
             return (
               <Figure
                 key={i}
@@ -104,14 +106,21 @@ export const Scene2LandJourney: React.FC = () => {
         </svg>
       </div>
 
-      {/* العنوان + العداد */}
+      {/* العنوان + الشرح + العداد */}
       <div style={{ position: "absolute", right: 110, top: 150, width: 600 }}>
         <div style={{ fontSize: 56, fontWeight: 900, color: COLORS.gold, marginBottom: 12 }}>الانطلاقة سراً</div>
-        <div style={{ fontSize: 32, color: COLORS.muted, lineHeight: 1.7, marginBottom: 40 }}>
-          من مكة إلى ميناء الشعيبة، مسيرٌ في ظلمة الليل
+        <div style={{ position: "relative", height: 120, marginBottom: 30 }}>
+          <Caption from={T} to={PHASE2 + 12} style={{ fontSize: 32, color: COLORS.muted, lineHeight: 1.7 }}>
+            في رجب من السنة الخامسة للبعثة، من مكة المكرمة نحو ميناء الشعيبة، مسيرٌ ليلاً
+          </Caption>
+          <Caption from={PHASE2} to={99999} style={{ fontSize: 32, color: COLORS.muted, lineHeight: 1.7 }}>
+            قطعتها القافلة مشياً وركوباً في نحو ثلاثة إلى أربعة أيام
+          </Caption>
         </div>
         <DayCounter from={1} to={4} startFrame={WALK_START} endFrame={WALK_END} label="المسار البري" />
       </div>
+
+      <ChapterTitle number="الفصل الثاني" title="الانطلاقة والمسار البري" dur={T} />
     </AbsoluteFill>
   );
 };

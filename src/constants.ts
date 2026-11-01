@@ -1,12 +1,21 @@
 // كل التوقيتات بالإطارات (30fps). المجموع = 2550 إطاراً = 1:25
+// مطابقة لنص التعليق الصوتي المؤقّت
 export const FPS = 30;
 export const TOTAL_FRAMES = 2550;
 
 export const SCENES = {
-  intro: { from: 0, dur: 600 }, // 0:00 – 0:20
-  land: { from: 600, dur: 1050 }, // 0:20 – 0:55
-  sea: { from: 1650, dur: 660 }, // 0:55 – 1:17
-  end: { from: 2310, dur: 240 }, // 1:17 – 1:25
+  intro: { from: 0, dur: 660 }, // 0:00 – 0:22
+  land: { from: 660, dur: 660 }, // 0:22 – 0:44
+  sea: { from: 1320, dur: 690 }, // 0:44 – 1:07
+  end: { from: 2010, dur: 540 }, // 1:07 – 1:25
+} as const;
+
+// مدة بطاقة عنوان الفصل في بداية كل مشهد (بالإطارات)
+export const TITLES = {
+  intro: 90, // 0:00 – 0:03
+  land: 120, // 0:22 – 0:26
+  sea: 90, // 0:44 – 0:47
+  end: 120, // 1:07 – 1:11
 } as const;
 
 export const COLORS = {

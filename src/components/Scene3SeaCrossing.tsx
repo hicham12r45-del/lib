@@ -1,7 +1,9 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
-import { COLORS } from "../constants";
+import { COLORS, TITLES } from "../constants";
 import { DayCounter } from "./DayCounter";
+import { ChapterTitle } from "./ChapterTitle";
+import { Caption } from "./Caption";
 
 /** مسار موجة يتحرك مع الإطار */
 const wavePath = (frame: number, amp: number, len: number, speed: number, y: number) => {
@@ -33,17 +35,23 @@ const Ship: React.FC<{ x: number; y: number; frame: number; scale: number; phase
   );
 };
 
+// إطارات محلية: المشهد كله 690 إطاراً (0:44 – 1:07)
+const T = TITLES.sea; // 0:44 – 0:47 عنوان الفصل
+const COUNTER_START = 420; // ~0:58 عند ذكر "عشرة إلى اثني عشر يوماً"
+const COUNTER_END = 640;
+
 export const Scene3SeaCrossing: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // انتقال بصري: كشف دائري يتوسّع من أسفل الشاشة نحو البحر
-  const reveal = interpolate(frame, [0, 50], [0, 150], {
+  // انتقال بصري: كشف دائري يتوسّع من أسفل الشاشة نحو البحر مع اختفاء بطاقة العنوان
+  const reveal = interpolate(frame, [T - 20, T + 35], [0, 150], {
+    extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
 
   // السفن تتحرك من اليمين (الشعيبة) إلى اليسار (الحبشة)
-  const travel = interpolate(frame, [30, 640], [0, 1], {
+  const travel = interpolate(frame, [T, 660], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.quad),
@@ -57,7 +65,6 @@ export const Scene3SeaCrossing: React.FC = () => {
       <AbsoluteFill style={{ clipPath: `circle(${reveal}% at 50% 100%)` }}>
         <AbsoluteFill style={{ background: "linear-gradient(180deg,#0a1a3a 0%,#123a6b 55%,#1b4f8a 100%)" }} />
 
-        {/* ضوء القمر على الماء */}
         <div
           style={{
             position: "absolute",
@@ -70,7 +77,6 @@ export const Scene3SeaCrossing: React.FC = () => {
         />
 
         <svg width={1920} height={1080} style={{ position: "absolute" }}>
-          {/* ساحل الحبشة يظهر عند الاقتراب */}
           <g opacity={coastIn}>
             <path d="M0 640 Q120 560 260 620 Q330 650 380 700 L380 1080 L0 1080 Z" fill="#2a3b2a" />
             <text x={170} y={600} fontSize={34} fill={COLORS.text} textAnchor="middle" fontWeight={700}>
@@ -78,7 +84,6 @@ export const Scene3SeaCrossing: React.FC = () => {
             </text>
           </g>
 
-          {/* الأمواج الخلفية */}
           <path d={wavePath(frame, 10, 90, 0.05, 640)} fill="#1a4a82" opacity={0.7} />
           <Ship x={ship2X} y={650} frame={frame} scale={0.9} phase={2} />
           <path d={wavePath(frame, 14, 70, 0.07, 690)} fill="#1b4f8a" opacity={0.9} />
@@ -86,14 +91,21 @@ export const Scene3SeaCrossing: React.FC = () => {
           <path d={wavePath(frame, 18, 110, 0.09, 770)} fill="#173f70" />
         </svg>
 
-        <div style={{ position: "absolute", right: 110, top: 90, width: 600 }}>
+        <div style={{ position: "absolute", right: 110, top: 110, width: 600 }}>
           <div style={{ fontSize: 56, fontWeight: 900, color: COLORS.gold, marginBottom: 12 }}>العبور البحري</div>
-          <div style={{ fontSize: 32, color: "#c4d2ea", lineHeight: 1.7, marginBottom: 36 }}>
-            سفينتان تجاريتان تشقّان البحر الأحمر
+          <div style={{ position: "relative", height: 100, marginBottom: 30 }}>
+            <Caption from={T + 10} to={COUNTER_START + 12} style={{ fontSize: 32, color: "#c4d2ea", lineHeight: 1.7 }}>
+              يسّر الله لهم سفينتين تجاريتين تشقّان البحر الأحمر
+            </Caption>
+            <Caption from={COUNTER_START} to={99999} style={{ fontSize: 32, color: "#c4d2ea", lineHeight: 1.7 }}>
+              رحلة بحرية بحسب حركة الرياح
+            </Caption>
           </div>
-          <DayCounter from={10} to={12} startFrame={60} endFrame={620} label="الرحلة البحرية" />
+          <DayCounter from={10} to={12} startFrame={COUNTER_START} endFrame={COUNTER_END} label="الرحلة البحرية" />
         </div>
       </AbsoluteFill>
+
+      <ChapterTitle number="الفصل الثالث" title="العبور البحري" dur={T} />
     </AbsoluteFill>
   );
 };
